@@ -1,0 +1,1142 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>IEG-M Dashboard — Olímpia/SP</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/recharts@2.15.4/umd/Recharts.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Poppins', sans-serif; background: #f1f5f9; color: #1e293b; }
+    a { text-decoration: none; color: inherit; }
+
+    /* Layout */
+    .app { display: flex; min-height: 100vh; }
+    .sidebar {
+      width: 256px; min-width: 256px; background: #003366; color: #e2e8f0;
+      display: flex; flex-direction: column; position: fixed; top: 0; left: 0;
+      height: 100vh; z-index: 100; overflow-y: auto;
+    }
+    .sidebar-header {
+      padding: 20px 16px 16px; border-bottom: 1px solid rgba(255,255,255,0.12);
+    }
+    .sidebar-logo { display: flex; align-items: center; gap: 10px; }
+    .sidebar-logo-icon {
+      width: 40px; height: 40px; background: #ffb800; border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 20px; flex-shrink: 0;
+    }
+    .sidebar-logo-text { font-size: 13px; font-weight: 700; color: #fff; line-height: 1.3; }
+    .sidebar-logo-sub { font-size: 10px; color: #93c5fd; font-weight: 400; }
+    .sidebar-nav { padding: 12px 10px; flex: 1; }
+    .nav-item {
+      display: flex; align-items: center; gap: 10px;
+      padding: 10px 12px; border-radius: 10px; cursor: pointer;
+      margin-bottom: 4px; transition: all .15s;
+      border: none; background: none; width: 100%; text-align: left;
+    }
+    .nav-item:hover { background: rgba(255,255,255,0.08); }
+    .nav-item.active { background: #ffb800; color: #003366; }
+    .nav-item .nav-icon { font-size: 16px; flex-shrink: 0; }
+    .nav-item .nav-label { font-size: 12px; font-weight: 600; }
+    .nav-item .nav-sub { font-size: 10px; opacity: .7; margin-top: 1px; }
+    .sidebar-footer {
+      padding: 12px 16px; border-top: 1px solid rgba(255,255,255,0.1);
+      font-size: 10px; color: #93c5fd;
+    }
+
+    .main { margin-left: 256px; flex: 1; display: flex; flex-direction: column; min-height: 100vh; }
+    .top-bar {
+      background: #fff; border-bottom: 1px solid #e2e8f0;
+      padding: 12px 24px; display: flex; align-items: center; justify-content: space-between;
+      position: sticky; top: 0; z-index: 50; box-shadow: 0 1px 4px rgba(0,0,0,.06);
+    }
+    .top-bar-title { font-size: 14px; font-weight: 700; color: #003366; }
+    .top-bar-badge {
+      font-size: 10px; font-weight: 700; background: #ffb800;
+      color: #003366; padding: 3px 10px; border-radius: 99px;
+    }
+    .content { padding: 24px; flex: 1; }
+
+    /* Cards & components */
+    .card {
+      background: #fff; border-radius: 12px; border: 1px solid #e2e8f0;
+      box-shadow: 0 2px 8px rgba(0,0,0,.07);
+    }
+    .card-navy-border { border-left: 8px solid #003366; }
+    .card-red-border { border-left: 8px solid #ef4444; }
+    .card-green-border { border-left: 8px solid #16a34a; }
+    .card-amber-border { border-left: 8px solid #f59e0b; }
+    .card-blue-border { border-left: 8px solid #3b82f6; }
+    .card-p { padding: 20px; }
+
+    .section-title {
+      font-size: 11px; font-weight: 700; text-transform: uppercase;
+      letter-spacing: .08em; color: #003366;
+      border-bottom: 2px solid #ffb800; padding-bottom: 8px; margin-bottom: 4px;
+    }
+    .section-sub { font-size: 11px; color: #64748b; margin-bottom: 16px; }
+
+    .page-header {
+      background: #003366; border-left: 8px solid #ffb800;
+      border-radius: 12px; padding: 16px 20px;
+      display: flex; align-items: center; gap: 14px; margin-bottom: 20px;
+      box-shadow: 0 4px 12px rgba(0,51,102,.2);
+    }
+    .page-header-icon { font-size: 24px; color: #ffb800; flex-shrink: 0; }
+    .page-header-badge { font-size: 9px; font-weight: 700; letter-spacing: .1em; color: #93c5fd; text-transform: uppercase; }
+    .page-header-title { font-size: 15px; font-weight: 700; color: #fff; }
+    .page-header-sub { font-size: 11px; color: #bfdbfe; font-style: italic; }
+
+    /* Grade badges */
+    .grade-badge {
+      display: inline-flex; align-items: center; justify-content: center;
+      border-radius: 8px; font-weight: 700; font-family: 'Poppins', sans-serif;
+      letter-spacing: .04em; border-width: 2px; border-style: solid;
+    }
+    .grade-sm { font-size: 11px; padding: 2px 8px; }
+    .grade-md { font-size: 13px; padding: 4px 10px; }
+    .grade-xl { font-size: 22px; padding: 6px 14px; }
+
+    /* Grid utilities */
+    .grid { display: grid; }
+    .grid-2 { grid-template-columns: 1fr 1fr; gap: 16px; }
+    .grid-3 { grid-template-columns: repeat(3, 1fr); gap: 16px; }
+    .grid-4 { grid-template-columns: repeat(4, 1fr); gap: 12px; }
+    .grid-5 { grid-template-columns: repeat(5, 1fr); gap: 12px; }
+    .grid-35 { grid-template-columns: 3fr 2fr; gap: 16px; }
+    .grid-23 { grid-template-columns: 2fr 1fr; gap: 16px; }
+    .space-y > * + * { margin-top: 20px; }
+
+    /* Flex */
+    .flex { display: flex; }
+    .items-center { align-items: center; }
+    .items-start { align-items: flex-start; }
+    .justify-between { justify-content: space-between; }
+    .gap-2 { gap: 8px; }
+    .gap-3 { gap: 12px; }
+    .gap-4 { gap: 16px; }
+    .flex-1 { flex: 1; }
+    .flex-wrap { flex-wrap: wrap; }
+
+    /* Tables */
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    .table-head-navy { background: #003366; color: #fff; }
+    .table-head-navy th {
+      padding: 10px 16px; text-align: left;
+      font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em;
+    }
+    .table-head-navy th.center { text-align: center; }
+    tbody tr:nth-child(even) { background: #f8fafc; }
+    tbody tr { border-top: 1px solid #e2e8f0; }
+    td { padding: 10px 16px; }
+    td.center { text-align: center; }
+
+    /* Pills */
+    .pill {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 4px 12px; border-radius: 99px; font-size: 12px; font-weight: 600;
+    }
+    .dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; flex-shrink: 0; }
+
+    /* Alert/info boxes */
+    .alert-box { border-radius: 12px; padding: 14px 16px; display: flex; align-items: flex-start; gap: 12px; }
+    .alert-icon { font-size: 18px; margin-top: 1px; }
+    .alert-title { font-size: 13px; font-weight: 600; }
+    .alert-text { font-size: 12px; margin-top: 3px; }
+    .alert-amber { background: #fffbeb; border: 1px solid #fde68a; }
+    .alert-amber .alert-title { color: #92400e; }
+    .alert-amber .alert-text { color: #b45309; }
+    .alert-blue { background: #eff6ff; border: 1px solid #bfdbfe; }
+    .alert-blue .alert-title { color: #1e40af; }
+    .alert-blue .alert-text { color: #1d4ed8; }
+    .alert-green { background: #f0fdf4; border: 1px solid #bbf7d0; }
+    .alert-green .alert-title { color: #166534; }
+    .alert-green .alert-text { color: #15803d; }
+    .alert-red { background: #fef2f2; border: 1px solid #fecaca; }
+    .alert-red .alert-title { color: #991b1b; }
+    .alert-red .alert-text { color: #b91c1c; }
+
+    /* Progress bar */
+    .progress-bg { background: #e2e8f0; border-radius: 99px; height: 20px; overflow: hidden; flex: 1; }
+    .progress-fill { height: 100%; border-radius: 99px; display: flex; align-items: center; justify-content: flex-end; padding-right: 8px; transition: width .7s; }
+    .progress-fill span { color: #fff; font-size: 11px; font-weight: 700; }
+
+    /* Heatmap cell */
+    .heat-cell {
+      display: inline-flex; align-items: center; justify-content: center;
+      width: 48px; height: 32px; border-radius: 8px; font-weight: 700;
+      font-size: 13px; color: #fff; box-shadow: 0 1px 3px rgba(0,0,0,.2);
+    }
+
+    /* KPI number */
+    .kpi-num { font-size: 20px; font-weight: 700; line-height: 1.2; }
+
+    /* Semáforo item */
+    .sem-item {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 10px 16px; border-radius: 12px; border-width: 1px; border-style: solid;
+      margin-bottom: 8px;
+    }
+
+    /* Priority row */
+    .priority-circle {
+      width: 32px; height: 32px; border-radius: 50%; display: flex;
+      align-items: center; justify-content: center; font-weight: 700;
+      font-size: 13px; color: #fff; flex-shrink: 0;
+    }
+    .impact-badge {
+      padding: 3px 10px; border-radius: 99px; font-size: 11px; font-weight: 600;
+      border-width: 1px; border-style: solid;
+    }
+
+    /* Square dots */
+    .sq { width: 14px; height: 14px; border-radius: 3px; display: inline-block; }
+    .sq-sm { width: 10px; height: 10px; border-radius: 2px; display: inline-block; }
+
+    /* Responsive */
+    @media (max-width: 900px) {
+      .sidebar { display: none; }
+      .main { margin-left: 0; }
+      .grid-5 { grid-template-columns: repeat(2, 1fr); }
+      .grid-4 { grid-template-columns: repeat(2, 1fr); }
+      .grid-35, .grid-23, .grid-3 { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 600px) {
+      .grid-2 { grid-template-columns: 1fr; }
+    }
+
+    /* Objective gradient banner */
+    .obj-banner {
+      background: linear-gradient(135deg, #1e3a5f 0%, #1d4ed8 100%);
+      border-radius: 12px; padding: 20px; color: #fff;
+      box-shadow: 0 4px 12px rgba(30,58,95,.3);
+    }
+    .obj-banner-label { font-size: 11px; font-weight: 500; opacity: .75; margin-bottom: 4px; }
+    .obj-banner-title { font-size: 22px; font-weight: 800; }
+    .obj-banner-sub { font-size: 12px; opacity: .8; margin-top: 6px; }
+
+    /* Meta bar squares */
+    .meta-sq {
+      flex: 1; height: 24px; border-radius: 3px; border-width: 2px; border-style: solid;
+      transition: all .3s;
+    }
+  </style>
+</head>
+<body>
+<div id="root"></div>
+
+<script>
+(function(){
+  const { useState, useEffect } = React;
+  const {
+    LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
+    ReferenceLine, ResponsiveContainer, Cell, Legend,
+    RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis,
+    LabelList
+  } = Recharts;
+
+  // ─── DATA ──────────────────────────────────────────────────────────────────
+  const GRADE_VALUE = { A: 5, 'B+': 4, B: 3, 'C+': 2, C: 1 };
+  const GRADE_LABEL = { 5: 'A', 4: 'B+', 3: 'B', 2: 'C+', 1: 'C' };
+  const GRADE_COLOR = { A: '#16a34a', 'B+': '#22c55e', B: '#f59e0b', 'C+': '#f97316', C: '#ef4444' };
+
+  const IEGM_EVOLUTION = [
+    { ano: 2015, nota: 'B' }, { ano: 2016, nota: 'B+' }, { ano: 2017, nota: 'B+' },
+    { ano: 2018, nota: 'B+' }, { ano: 2019, nota: 'B' }, { ano: 2020, nota: 'B' },
+    { ano: 2021, nota: 'B' }, { ano: 2022, nota: 'B' }, { ano: 2023, nota: 'B' },
+    { ano: 2024, nota: 'B' }, { ano: 2025, nota: 'B' },
+  ];
+
+  const NOTE_DISTRIBUTION = [
+    { nota: 'A', quantidade: 11 }, { nota: 'B+', quantidade: 17 },
+    { nota: 'B', quantidade: 39 }, { nota: 'C+', quantidade: 11 }, { nota: 'C', quantidade: 4 },
+  ];
+
+  const INDICATORS = ['i-Plan', 'i-Fiscal', 'i-Educ', 'i-Saúde', 'i-Amb', 'i-Cidade', 'i-Gov TI'];
+
+  const INDICATORS_EVOLUTION = [
+    { ano: 2016, 'i-Plan': 'B+', 'i-Fiscal': 'B',  'i-Educ': 'B+', 'i-Saúde': 'A',  'i-Amb': 'A',  'i-Cidade': 'A',  'i-Gov TI': 'B'  },
+    { ano: 2017, 'i-Plan': 'A',  'i-Fiscal': 'B',  'i-Educ': 'B+', 'i-Saúde': 'B+', 'i-Amb': 'B+', 'i-Cidade': 'A',  'i-Gov TI': 'B+' },
+    { ano: 2018, 'i-Plan': 'B+', 'i-Fiscal': 'B+', 'i-Educ': 'C+', 'i-Saúde': 'B+', 'i-Amb': 'B+', 'i-Cidade': 'B+', 'i-Gov TI': 'B'  },
+    { ano: 2025, 'i-Plan': 'C+', 'i-Fiscal': 'B+', 'i-Educ': 'B',  'i-Saúde': 'C+', 'i-Amb': 'C',  'i-Cidade': 'B',  'i-Gov TI': 'B'  },
+  ];
+
+  const HIGH_GRADE_COUNT = [
+    { ano: 2016, quantidade: 5 }, { ano: 2017, quantidade: 5 },
+    { ano: 2018, quantidade: 5 }, { ano: 2025, quantidade: 1 },
+  ];
+
+  const LOSS_RANKING = [
+    { indicador: 'i-Plan',   melhor: 'A',  atual: 'C+', perda: 3 },
+    { indicador: 'i-Saúde',  melhor: 'A',  atual: 'C+', perda: 3 },
+    { indicador: 'i-Amb',    melhor: 'A',  atual: 'C',  perda: 4 },
+    { indicador: 'i-Cidade', melhor: 'A',  atual: 'B',  perda: 2 },
+    { indicador: 'i-Educ',   melhor: 'B+', atual: 'B',  perda: 1 },
+    { indicador: 'i-Fiscal', melhor: 'B+', atual: 'B+', perda: 0 },
+    { indicador: 'i-Gov TI', melhor: 'B+', atual: 'B',  perda: 1 },
+  ];
+
+  const SEMAFORO = [
+    { indicador: 'i-Plan',   situacao: 'Crítico',  cor: 'red'    },
+    { indicador: 'i-Amb',    situacao: 'Crítico',  cor: 'red'    },
+    { indicador: 'i-Saúde',  situacao: 'Atenção',  cor: 'orange' },
+    { indicador: 'i-Cidade', situacao: 'Moderado', cor: 'yellow' },
+    { indicador: 'i-Educ',   situacao: 'Moderado', cor: 'yellow' },
+    { indicador: 'i-Fiscal', situacao: 'Bom',      cor: 'green'  },
+    { indicador: 'i-Gov TI', situacao: 'Estável',  cor: 'green'  },
+  ];
+
+  const NOTAS_2025 = { 'i-Plan': 'C+', 'i-Fiscal': 'B+', 'i-Educ': 'B', 'i-Saúde': 'C+', 'i-Amb': 'C', 'i-Cidade': 'B', 'i-Gov TI': 'B' };
+  const PROJECAO_2026 = { 'i-Plan': 'B', 'i-Fiscal': 'B+', 'i-Educ': 'B', 'i-Saúde': 'B', 'i-Amb': 'C+', 'i-Cidade': 'B', 'i-Gov TI': 'B+' };
+  const PRIORITY_MATRIX = [
+    { indicador: 'i-Plan',   impacto: 'Muito Alto', prioridade: 1, notaAtual: 'C+', meta: 'B+' },
+    { indicador: 'i-Amb',    impacto: 'Alto',       prioridade: 2, notaAtual: 'C',  meta: 'B+' },
+    { indicador: 'i-Saúde',  impacto: 'Médio',      prioridade: 3, notaAtual: 'C+', meta: 'B+' },
+    { indicador: 'i-Cidade', impacto: 'Médio',      prioridade: 4, notaAtual: 'B',  meta: 'B+' },
+    { indicador: 'i-Educ',   impacto: 'Médio',      prioridade: 5, notaAtual: 'B',  meta: 'B+' },
+    { indicador: 'i-Gov TI', impacto: 'Baixo',      prioridade: 6, notaAtual: 'B',  meta: 'B+' },
+    { indicador: 'i-Fiscal', impacto: 'Baixo',      prioridade: 7, notaAtual: 'B+', meta: 'A'  },
+  ];
+
+  // ─── SHARED COMPONENTS ─────────────────────────────────────────────────────
+  function GradeBadge({ grade, size = 'md' }) {
+    const color = GRADE_COLOR[grade] || '#6b7280';
+    const cls = size === 'xl' ? 'grade-xl' : size === 'sm' ? 'grade-sm' : 'grade-md';
+    return React.createElement('span', {
+      className: `grade-badge ${cls}`,
+      style: { backgroundColor: color + '22', color, borderColor: color + '88' }
+    }, grade);
+  }
+
+  function PageHeader({ icon, title, subtitle, badge }) {
+    return React.createElement('div', { className: 'page-header' },
+      React.createElement('div', { className: 'page-header-icon' }, icon),
+      React.createElement('div', null,
+        badge && React.createElement('p', { className: 'page-header-badge' }, badge),
+        React.createElement('p', { className: 'page-header-title' }, title),
+        subtitle && React.createElement('p', { className: 'page-header-sub' }, subtitle)
+      )
+    );
+  }
+
+  const tickMap = { 5: 'A', 4: 'B+', 3: 'B', 2: 'C+', 1: 'C' };
+
+  // ─── PAGE 1: VISÃO EXECUTIVA ────────────────────────────────────────────────
+  function VisaoExecutiva() {
+    const lineData = IEGM_EVOLUTION.map(d => ({ ano: d.ano, valor: GRADE_VALUE[d.nota], nota: d.nota }));
+
+    const CustomDot = (props) => {
+      const { cx, cy, payload } = props;
+      return React.createElement('circle', { cx, cy, r: 5, fill: payload.nota === 'B+' ? '#22c55e' : '#f59e0b', stroke: 'white', strokeWidth: 2 });
+    };
+
+    const TipLine = ({ active, payload, label }) => {
+      if (!active || !payload?.length) return null;
+      const nota = payload[0]?.payload?.nota;
+      return React.createElement('div', { style: { background: '#fff', border: '1px solid #e2e8f0', borderRadius: 8, padding: '8px 12px', fontSize: 12, boxShadow: '0 4px 12px rgba(0,0,0,.1)' } },
+        React.createElement('p', { style: { fontWeight: 700 } }, label),
+        React.createElement('p', { style: { color: GRADE_COLOR[nota], fontWeight: 600 } }, 'IEG-M: ' + nota)
+      );
+    };
+    const TipBar = ({ active, payload, label }) => {
+      if (!active || !payload?.length) return null;
+      return React.createElement('div', { style: { background: '#fff', border: '1px solid #e2e8f0', borderRadius: 8, padding: '8px 12px', fontSize: 12 } },
+        React.createElement('p', { style: { fontWeight: 700 } }, 'Nota ' + label),
+        React.createElement('p', null, payload[0].value + ' ocorrências')
+      );
+    };
+
+    const kpis = [
+      { label: 'IEG-M 2025', value: 'B', sub: 'Resultado atual', isGrade: true },
+      { label: 'Melhor Resultado Hist.', value: 'B+', sub: 'Período 2016–2018', isGrade: true },
+      { label: 'Anos Consecutivos em B', value: '7', sub: '2019 a 2025', isGrade: false },
+      { label: 'Melhor Indicador Hist.', value: 'i-Cidade', sub: 'Atingiu nota A', isGrade: false },
+      { label: 'Principal Gargalo Atual', value: 'i-Plan', sub: 'Caiu de A para C+', isGrade: false, alert: true },
+    ];
+
+    return React.createElement('div', { className: 'space-y' },
+      React.createElement(PageHeader, { icon: '📊', title: 'Visão Executiva', subtitle: 'Diagnóstico geral do IEG-M de Olímpia — onde estamos em 2025', badge: 'Página 1 de 6' }),
+
+      // KPIs
+      React.createElement('div', { className: 'grid grid-5' },
+        kpis.map(c => React.createElement('div', {
+          key: c.label,
+          className: `card card-p ${c.alert ? 'card-red-border' : 'card-navy-border'}`,
+          style: c.alert ? { background: '#fef2f2' } : {}
+        },
+          React.createElement('p', { style: { fontSize: 11, color: '#64748b', marginBottom: 6 } }, c.label),
+          c.isGrade
+            ? React.createElement(GradeBadge, { grade: c.value, size: 'xl' })
+            : React.createElement('p', { className: 'kpi-num', style: { color: c.alert ? '#ef4444' : '#1e293b' } }, c.value),
+          React.createElement('p', { style: { fontSize: 11, color: '#64748b', marginTop: 6 } }, c.sub)
+        ))
+      ),
+
+      // Charts row
+      React.createElement('div', { className: 'grid grid-23' },
+        // Line chart
+        React.createElement('div', { className: 'card card-p' },
+          React.createElement('div', { className: 'flex justify-between items-start', style: { marginBottom: 12 } },
+            React.createElement('div', null,
+              React.createElement('p', { className: 'section-title' }, 'Evolução do IEG-M'),
+              React.createElement('p', { className: 'section-sub' }, '2015 – 2025')
+            ),
+            React.createElement('div', { className: 'flex gap-3', style: { fontSize: 11 } },
+              React.createElement('span', { className: 'flex items-center gap-2' },
+                React.createElement('span', { style: { width: 10, height: 10, borderRadius: '50%', background: '#22c55e', display: 'inline-block' } }),
+                'B+'
+              ),
+              React.createElement('span', { className: 'flex items-center gap-2' },
+                React.createElement('span', { style: { width: 10, height: 10, borderRadius: '50%', background: '#f59e0b', display: 'inline-block' } }),
+                'B'
+              )
+            )
+          ),
+          React.createElement(ResponsiveContainer, { width: '100%', height: 220 },
+            React.createElement(LineChart, { data: lineData, margin: { top: 8, right: 12, left: -10, bottom: 0 } },
+              React.createElement(CartesianGrid, { strokeDasharray: '3 3', stroke: '#f1f5f9' }),
+              React.createElement(XAxis, { dataKey: 'ano', tick: { fontSize: 11 } }),
+              React.createElement(YAxis, { domain: [1, 5], tickFormatter: v => tickMap[v] || '', ticks: [1,2,3,4,5], tick: { fontSize: 11 } }),
+              React.createElement(Tooltip, { content: React.createElement(TipLine) }),
+              React.createElement(ReferenceLine, { y: 4, stroke: '#22c55e', strokeDasharray: '4 3', strokeWidth: 1.5, label: { value: 'B+', position: 'right', fontSize: 10, fill: '#22c55e' } }),
+              React.createElement(Line, { type: 'monotone', dataKey: 'valor', stroke: '#1e40af', strokeWidth: 2.5, dot: React.createElement(CustomDot), activeDot: { r: 7 } })
+            )
+          ),
+          React.createElement('p', { style: { fontSize: 11, color: '#64748b', marginTop: 10, fontStyle: 'italic' } },
+            '🟢 Período B+: 2016–2018 · 🟡 Período B: 2015, 2019–2025'
+          )
+        ),
+        // Bar chart
+        React.createElement('div', { className: 'card card-p' },
+          React.createElement('p', { className: 'section-title' }, 'Distribuição Histórica das Notas'),
+          React.createElement('p', { className: 'section-sub' }, 'Total de ocorrências por conceito'),
+          React.createElement(ResponsiveContainer, { width: '100%', height: 220 },
+            React.createElement(BarChart, { data: NOTE_DISTRIBUTION, margin: { top: 4, right: 8, left: -20, bottom: 0 } },
+              React.createElement(CartesianGrid, { strokeDasharray: '3 3', stroke: '#f1f5f9', vertical: false }),
+              React.createElement(XAxis, { dataKey: 'nota', tick: { fontSize: 12, fontWeight: 600 } }),
+              React.createElement(YAxis, { tick: { fontSize: 11 } }),
+              React.createElement(Tooltip, { content: React.createElement(TipBar) }),
+              React.createElement(Bar, { dataKey: 'quantidade', radius: [6, 6, 0, 0] },
+                NOTE_DISTRIBUTION.map(e => React.createElement(Cell, { key: e.nota, fill: GRADE_COLOR[e.nota] }))
+              )
+            )
+          ),
+          React.createElement('div', { style: { marginTop: 10 } },
+            NOTE_DISTRIBUTION.map(d => React.createElement('div', {
+              key: d.nota,
+              className: 'flex justify-between items-center',
+              style: { fontSize: 11, marginBottom: 4 }
+            },
+              React.createElement('span', { className: 'flex items-center gap-2' },
+                React.createElement('span', { className: 'sq-sm', style: { background: GRADE_COLOR[d.nota] } }),
+                d.nota
+              ),
+              React.createElement('span', { style: { fontWeight: 700 } }, d.quantidade + 'x')
+            ))
+          )
+        )
+      ),
+
+      // Alert
+      React.createElement('div', { className: 'alert-box alert-amber' },
+        React.createElement('span', { className: 'alert-icon' }, '⚠️'),
+        React.createElement('div', null,
+          React.createElement('p', { className: 'alert-title' }, 'Atenção do Gestor'),
+          React.createElement('p', { className: 'alert-text' },
+            'Olímpia ficou ', React.createElement('strong', null, '7 anos consecutivos em B'), ' (2019–2025). O município já atingiu B+ antes — a chave está em reativar os indicadores que sustentaram esse resultado entre 2016 e 2018.'
+          )
+        )
+      )
+    );
+  }
+
+  // ─── PAGE 2: EVOLUÇÃO INDICADORES ──────────────────────────────────────────
+  function EvolucaoIndicadores() {
+    const INDICATOR_COLORS = { 'i-Plan': '#1d4ed8', 'i-Fiscal': '#16a34a', 'i-Educ': '#9333ea', 'i-Saúde': '#dc2626', 'i-Amb': '#0891b2', 'i-Cidade': '#f59e0b', 'i-Gov TI': '#64748b' };
+    const chartData = INDICATORS_EVOLUTION.map(row => {
+      const entry = { ano: row.ano };
+      INDICATORS.forEach(ind => { entry[ind] = GRADE_VALUE[row[ind]]; entry[ind + '_nota'] = row[ind]; });
+      return entry;
+    });
+    const allYears = [2016, 2017, 2018, 2025];
+    const dataByYear = {};
+    INDICATORS_EVOLUTION.forEach(r => { dataByYear[r.ano] = r; });
+
+    const Tip = ({ active, payload, label }) => {
+      if (!active || !payload?.length) return null;
+      return React.createElement('div', { style: { background: '#fff', border: '1px solid #e2e8f0', borderRadius: 10, padding: 12, fontSize: 11, boxShadow: '0 4px 12px rgba(0,0,0,.1)', minWidth: 160 } },
+        React.createElement('p', { style: { fontWeight: 700, fontSize: 13, borderBottom: '1px solid #e2e8f0', paddingBottom: 6, marginBottom: 8 } }, label),
+        payload.map(p => React.createElement('div', { key: p.dataKey, className: 'flex justify-between', style: { marginBottom: 4 } },
+          React.createElement('span', { className: 'flex items-center gap-2' },
+            React.createElement('span', { style: { width: 8, height: 8, borderRadius: '50%', background: p.color, display: 'inline-block' } }),
+            p.dataKey
+          ),
+          React.createElement(GradeBadge, { grade: p.payload[p.dataKey + '_nota'], size: 'sm' })
+        ))
+      );
+    };
+
+    return React.createElement('div', { className: 'space-y' },
+      React.createElement(PageHeader, { icon: '📈', title: 'Evolução Histórica dos Indicadores', subtitle: 'Como cada indicador se comportou ao longo dos anos disponíveis', badge: 'Página 2 de 6' }),
+
+      React.createElement('div', { className: 'alert-box alert-blue' },
+        React.createElement('span', { className: 'alert-icon' }, '💡'),
+        React.createElement('div', null,
+          React.createElement('p', { className: 'alert-title' }, 'Insight Automático'),
+          React.createElement('p', { className: 'alert-text' },
+            'O indicador com ', React.createElement('strong', null, 'maior queda histórica'), ' foi o ', React.createElement('strong', null, 'i-Plan'), ', que passou de ', React.createElement('strong', null, 'A (2017)'), ' para ', React.createElement('strong', null, 'C+ (2025)'), ' — uma queda de 3 níveis em 8 anos.'
+          )
+        )
+      ),
+
+      React.createElement('div', { className: 'card card-p' },
+        React.createElement('p', { className: 'section-title' }, 'Evolução por Indicador'),
+        React.createElement('p', { className: 'section-sub' }, 'Dados disponíveis: 2016, 2017, 2018 e 2025 · Escala: A=5, B+=4, B=3, C+=2, C=1'),
+        React.createElement(ResponsiveContainer, { width: '100%', height: 280 },
+          React.createElement(LineChart, { data: chartData, margin: { top: 8, right: 20, left: -10, bottom: 0 } },
+            React.createElement(CartesianGrid, { strokeDasharray: '3 3', stroke: '#f1f5f9' }),
+            React.createElement(XAxis, { dataKey: 'ano', tick: { fontSize: 12 } }),
+            React.createElement(YAxis, { domain: [1, 5], tickFormatter: v => tickMap[v] || '', ticks: [1,2,3,4,5], tick: { fontSize: 11 } }),
+            React.createElement(Tooltip, { content: React.createElement(Tip) }),
+            React.createElement(Legend, { wrapperStyle: { fontSize: 12, paddingTop: 12 }, iconType: 'circle', iconSize: 8 }),
+            INDICATORS.map(ind => React.createElement(Line, {
+              key: ind, type: 'monotone', dataKey: ind,
+              stroke: INDICATOR_COLORS[ind], strokeWidth: 2,
+              dot: { r: 5, fill: INDICATOR_COLORS[ind], strokeWidth: 2, stroke: 'white' },
+              activeDot: { r: 7 }
+            }))
+          )
+        )
+      ),
+
+      React.createElement('div', { className: 'card', style: { overflow: 'hidden' } },
+        React.createElement('div', { style: { padding: '16px 20px', borderBottom: '1px solid #e2e8f0' } },
+          React.createElement('p', { className: 'section-title', style: { marginBottom: 2 } }, 'Tabela de Notas por Ano'),
+          React.createElement('p', { style: { fontSize: 11, color: '#64748b' } }, 'Dados exatos conforme IEG-M TCE-SP')
+        ),
+        React.createElement('div', { style: { overflowX: 'auto' } },
+          React.createElement('table', null,
+            React.createElement('thead', null,
+              React.createElement('tr', { className: 'table-head-navy' },
+                React.createElement('th', null, 'Indicador'),
+                allYears.map(y => React.createElement('th', { key: y, className: 'center' }, y)),
+                React.createElement('th', { className: 'center' }, 'Tendência')
+              )
+            ),
+            React.createElement('tbody', null,
+              INDICATORS.map(ind => {
+                const nota2016 = dataByYear[2016]?.[ind];
+                const nota2025 = dataByYear[2025]?.[ind];
+                const diff = GRADE_VALUE[nota2025] - GRADE_VALUE[nota2016];
+                const trend = diff > 0 ? '↑ Melhora' : diff < 0 ? '↓ Queda' : '→ Estável';
+                const trendColor = diff > 0 ? '#16a34a' : diff < 0 ? '#ef4444' : '#f59e0b';
+                return React.createElement('tr', { key: ind },
+                  React.createElement('td', { style: { fontWeight: 600 } }, ind),
+                  allYears.map(y => React.createElement('td', { key: y, className: 'center' },
+                    dataByYear[y]?.[ind] ? React.createElement(GradeBadge, { grade: dataByYear[y][ind], size: 'sm' }) : '–'
+                  )),
+                  React.createElement('td', { className: 'center', style: { fontSize: 11, fontWeight: 700, color: trendColor } }, trend)
+                );
+              })
+            )
+          )
+        )
+      )
+    );
+  }
+
+  // ─── PAGE 3: FATORES B+ ────────────────────────────────────────────────────
+  function FatoresBplus() {
+    const HEATMAP_DATA = [
+      { ind: 'i-Plan',   2016: 'B+', 2017: 'A',  2018: 'B+' },
+      { ind: 'i-Fiscal', 2016: 'B',  2017: 'B',  2018: 'B+' },
+      { ind: 'i-Educ',   2016: 'B+', 2017: 'B+', 2018: 'C+' },
+      { ind: 'i-Saúde',  2016: 'A',  2017: 'B+', 2018: 'B+' },
+      { ind: 'i-Amb',    2016: 'A',  2017: 'B+', 2018: 'B+' },
+      { ind: 'i-Cidade', 2016: 'A',  2017: 'A',  2018: 'B+' },
+      { ind: 'i-Gov TI', 2016: 'B',  2017: 'B+', 2018: 'B'  },
+    ];
+    const years = [2016, 2017, 2018];
+
+    return React.createElement('div', { className: 'space-y' },
+      React.createElement(PageHeader, { icon: '🏆', title: 'Fatores que Geraram o B+', subtitle: 'O que Olímpia fez diferente em 2016, 2017 e 2018 para alcançar o B+', badge: 'Página 3 de 6' }),
+
+      React.createElement('div', { className: 'alert-box alert-green' },
+        React.createElement('span', { className: 'alert-icon' }, '🎯'),
+        React.createElement('div', null,
+          React.createElement('p', { className: 'alert-title' }, 'Por que Olímpia teve B+?'),
+          React.createElement('p', { className: 'alert-text' },
+            'Nos três anos de B+ (2016–2018), ', React.createElement('strong', null, '5 dos 7 indicadores estavam em A ou B+'), ' — especialmente i-Cidade, i-Saúde e i-Amb, que chegaram à nota máxima A. Em 2025, apenas 1 indicador permanece em B+.'
+          )
+        )
+      ),
+
+      React.createElement('div', { className: 'grid grid-23' },
+        // Heatmap
+        React.createElement('div', { className: 'card', style: { overflow: 'hidden' } },
+          React.createElement('div', { style: { padding: '16px 20px', borderBottom: '1px solid #e2e8f0' } },
+            React.createElement('p', { className: 'section-title', style: { marginBottom: 2 } }, 'Heatmap de Notas — Anos B+'),
+            React.createElement('p', { style: { fontSize: 11, color: '#64748b' } }, 'Notas dos 7 indicadores durante o período de excelência')
+          ),
+          React.createElement('div', { style: { overflowX: 'auto' } },
+            React.createElement('table', null,
+              React.createElement('thead', null,
+                React.createElement('tr', { className: 'table-head-navy' },
+                  React.createElement('th', null, 'Indicador'),
+                  years.map(y => React.createElement('th', { key: y, className: 'center' }, y))
+                )
+              ),
+              React.createElement('tbody', null,
+                HEATMAP_DATA.map(row => React.createElement('tr', { key: row.ind },
+                  React.createElement('td', { style: { fontWeight: 600 } }, row.ind),
+                  years.map(y => React.createElement('td', { key: y, className: 'center' },
+                    React.createElement('div', {
+                      className: 'heat-cell',
+                      style: { background: GRADE_COLOR[row[y]] }
+                    }, row[y])
+                  ))
+                ))
+              )
+            )
+          ),
+          React.createElement('div', { style: { padding: '10px 20px', borderTop: '1px solid #e2e8f0', background: '#f8fafc', display: 'flex', gap: 12, flexWrap: 'wrap' } },
+            ['A', 'B+', 'B', 'C+', 'C'].map(g => React.createElement('span', { key: g, className: 'flex items-center gap-2', style: { fontSize: 11, fontWeight: 600 } },
+              React.createElement('span', { style: { width: 20, height: 16, borderRadius: 4, background: GRADE_COLOR[g], display: 'inline-block' } }),
+              g
+            ))
+          )
+        ),
+
+        // Bar + dots
+        React.createElement('div', { className: 'card card-p', style: { display: 'flex', flexDirection: 'column' } },
+          React.createElement('p', { className: 'section-title' }, 'Indicadores em A ou B+'),
+          React.createElement('p', { className: 'section-sub' }, 'Quantidade por ano — explica a queda do IEG-M'),
+          React.createElement(ResponsiveContainer, { width: '100%', height: 160 },
+            React.createElement(BarChart, { data: HIGH_GRADE_COUNT, margin: { top: 4, right: 8, left: -20, bottom: 0 } },
+              React.createElement(CartesianGrid, { strokeDasharray: '3 3', stroke: '#f1f5f9', vertical: false }),
+              React.createElement(XAxis, { dataKey: 'ano', tick: { fontSize: 12, fontWeight: 600 } }),
+              React.createElement(YAxis, { domain: [0, 7], ticks: [0,1,2,3,4,5,6,7], tick: { fontSize: 11 } }),
+              React.createElement(Tooltip, { formatter: v => [v + ' indicadores', 'A ou B+'], labelFormatter: l => 'Ano ' + l }),
+              React.createElement(Bar, { dataKey: 'quantidade', radius: [6,6,0,0] },
+                HIGH_GRADE_COUNT.map((e, i) => React.createElement(Cell, { key: i, fill: e.ano === 2025 ? '#ef4444' : '#16a34a' }))
+              )
+            )
+          ),
+          React.createElement('div', { style: { marginTop: 16 } },
+            HIGH_GRADE_COUNT.map(d => React.createElement('div', { key: d.ano, className: 'flex justify-between items-center', style: { marginBottom: 8 } },
+              React.createElement('span', { style: { fontWeight: 600, fontSize: 13 } }, d.ano),
+              React.createElement('div', { className: 'flex items-center gap-2' },
+                Array.from({ length: 7 }).map((_, i) => React.createElement('div', {
+                  key: i,
+                  style: { width: 16, height: 16, borderRadius: 3, background: i < d.quantidade ? (d.ano === 2025 ? '#ef4444' : '#16a34a') : '#e5e7eb' }
+                })),
+                React.createElement('span', { style: { fontWeight: 700, fontSize: 11, marginLeft: 4 } }, d.quantidade + '/7')
+              )
+            ))
+          ),
+          React.createElement('div', { style: { marginTop: 12, padding: '10px 12px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8, fontSize: 11, color: '#b91c1c' } },
+            '⚠️ Em 2025, apenas ', React.createElement('strong', null, '1 de 7'), ' indicadores está em B+ ou acima.'
+          )
+        )
+      ),
+
+      React.createElement('div', { className: 'grid grid-3' },
+        React.createElement('div', { className: 'card card-p', style: { textAlign: 'center' } },
+          React.createElement('p', { style: { fontSize: 30, fontWeight: 700, color: '#16a34a' } }, '5/7'),
+          React.createElement('p', { style: { fontSize: 11, color: '#64748b', marginTop: 4 } }, 'indicadores em A ou B+\nnos anos de B+ (2016–2018)')
+        ),
+        React.createElement('div', { className: 'card card-p', style: { textAlign: 'center' } },
+          React.createElement('p', { style: { fontSize: 30, fontWeight: 700, color: '#ef4444' } }, '1/7'),
+          React.createElement('p', { style: { fontSize: 11, color: '#64748b', marginTop: 4 } }, 'indicadores em A ou B+\nem 2025')
+        ),
+        React.createElement('div', { className: 'card card-p', style: { textAlign: 'center' } },
+          React.createElement('p', { style: { fontSize: 30, fontWeight: 700, color: '#003366' } }, '4+'),
+          React.createElement('p', { style: { fontSize: 11, color: '#64748b', marginTop: 4 } }, 'indicadores em B+ ou A\nnecessários para retornar ao B+')
+        )
+      )
+    );
+  }
+
+  // ─── PAGE 4: GARGALOS ATUAIS ───────────────────────────────────────────────
+  function GargalosAtuais() {
+    const semaforoConfig = {
+      red:    { bg: '#fef2f2', border: '#fecaca', text: '#b91c1c', dot: '#ef4444', icon: '🔴' },
+      orange: { bg: '#fff7ed', border: '#fed7aa', text: '#c2410c', dot: '#f97316', icon: '🟠' },
+      yellow: { bg: '#fffbeb', border: '#fde68a', text: '#b45309', dot: '#fbbf24', icon: '🟡' },
+      green:  { bg: '#f0fdf4', border: '#bbf7d0', text: '#15803d', dot: '#22c55e', icon: '🟢' },
+    };
+    const barData = LOSS_RANKING.map(d => ({
+      indicador: d.indicador, Melhor: GRADE_VALUE[d.melhor], Atual: GRADE_VALUE[d.atual],
+      melhorNota: d.melhor, atualNota: d.atual, perda: d.perda,
+    }));
+
+    const Tip = ({ active, payload, label }) => {
+      if (!active || !payload?.length) return null;
+      const d = LOSS_RANKING.find(r => r.indicador === label);
+      return React.createElement('div', { style: { background: '#fff', border: '1px solid #e2e8f0', borderRadius: 10, padding: 12, fontSize: 11, boxShadow: '0 4px 12px rgba(0,0,0,.1)', minWidth: 180 } },
+        React.createElement('p', { style: { fontWeight: 700, fontSize: 13, marginBottom: 8 } }, label),
+        React.createElement('div', { className: 'flex justify-between', style: { marginBottom: 4 } },
+          React.createElement('span', null, 'Melhor histórico:'),
+          React.createElement(GradeBadge, { grade: d?.melhor, size: 'sm' })
+        ),
+        React.createElement('div', { className: 'flex justify-between', style: { marginBottom: 4 } },
+          React.createElement('span', null, 'Nota atual (2025):'),
+          React.createElement(GradeBadge, { grade: d?.atual, size: 'sm' })
+        ),
+        d?.perda > 0 && React.createElement('p', { style: { color: '#ef4444', fontWeight: 700, marginTop: 6 } }, '⬇ Queda de ' + d.perda + ' nível(is)')
+      );
+    };
+
+    const criticos = SEMAFORO.filter(s => s.cor === 'red').length;
+    const atencao = SEMAFORO.filter(s => s.cor === 'orange').length;
+    const bons = SEMAFORO.filter(s => s.cor === 'green').length;
+
+    return React.createElement('div', { className: 'space-y' },
+      React.createElement(PageHeader, { icon: '🚨', title: 'Gargalos Atuais', subtitle: 'Comparativo entre o melhor resultado histórico e a situação em 2025', badge: 'Página 4 de 6' }),
+
+      React.createElement('div', { className: 'flex flex-wrap gap-3' },
+        React.createElement('span', { className: 'pill', style: { background: '#fef2f2', border: '1px solid #fecaca' } },
+          React.createElement('span', { className: 'dot', style: { background: '#ef4444' } }),
+          React.createElement('span', { style: { color: '#b91c1c', fontWeight: 600 } }, criticos + ' Críticos')
+        ),
+        React.createElement('span', { className: 'pill', style: { background: '#fff7ed', border: '1px solid #fed7aa' } },
+          React.createElement('span', { className: 'dot', style: { background: '#f97316' } }),
+          React.createElement('span', { style: { color: '#c2410c', fontWeight: 600 } }, atencao + ' Atenção')
+        ),
+        React.createElement('span', { className: 'pill', style: { background: '#f0fdf4', border: '1px solid #bbf7d0' } },
+          React.createElement('span', { className: 'dot', style: { background: '#22c55e' } }),
+          React.createElement('span', { style: { color: '#15803d', fontWeight: 600 } }, bons + ' Bom/Estável')
+        )
+      ),
+
+      React.createElement('div', { className: 'grid grid-35' },
+        React.createElement('div', { className: 'card card-p' },
+          React.createElement('p', { className: 'section-title' }, 'Ranking de Perda'),
+          React.createElement('p', { className: 'section-sub' }, 'Melhor nota histórica vs nota atual (2025)'),
+          React.createElement(ResponsiveContainer, { width: '100%', height: 300 },
+            React.createElement(BarChart, { data: barData, layout: 'vertical', margin: { top: 4, right: 30, left: 20, bottom: 0 }, barCategoryGap: '30%' },
+              React.createElement(CartesianGrid, { strokeDasharray: '3 3', stroke: '#f1f5f9', horizontal: false }),
+              React.createElement(XAxis, { type: 'number', domain: [0, 5], tickFormatter: v => tickMap[v] || '', ticks: [1,2,3,4,5], tick: { fontSize: 11 } }),
+              React.createElement(YAxis, { dataKey: 'indicador', type: 'category', tick: { fontSize: 12, fontWeight: 600 }, width: 64 }),
+              React.createElement(Tooltip, { content: React.createElement(Tip) }),
+              React.createElement(Legend, { wrapperStyle: { fontSize: 12 } }),
+              React.createElement(Bar, { dataKey: 'Melhor', name: 'Melhor Histórico', fill: '#16a34a', radius: [0,4,4,0], opacity: 0.7 }),
+              React.createElement(Bar, { dataKey: 'Atual', name: 'Nota Atual (2025)', fill: '#ef4444', radius: [0,4,4,0], opacity: 0.85 })
+            )
+          )
+        ),
+        React.createElement('div', { className: 'card card-p' },
+          React.createElement('p', { className: 'section-title' }, 'Semáforo de Situação'),
+          React.createElement('p', { className: 'section-sub' }, 'Status de cada indicador em 2025'),
+          SEMAFORO.map(s => {
+            const cfg = semaforoConfig[s.cor];
+            return React.createElement('div', { key: s.indicador, className: 'sem-item', style: { background: cfg.bg, borderColor: cfg.border } },
+              React.createElement('div', { className: 'flex items-center gap-3' },
+                React.createElement('span', { className: 'dot', style: { background: cfg.dot } }),
+                React.createElement('span', { style: { fontWeight: 600, fontSize: 13, color: cfg.text } }, s.indicador)
+              ),
+              React.createElement('div', { className: 'flex items-center gap-2' },
+                React.createElement('span', { style: { fontSize: 16 } }, cfg.icon),
+                React.createElement('span', { style: { fontSize: 11, fontWeight: 600, color: cfg.text } }, s.situacao)
+              )
+            );
+          })
+        )
+      ),
+
+      React.createElement('div', { className: 'card', style: { overflow: 'hidden' } },
+        React.createElement('div', { style: { padding: '16px 20px', borderBottom: '1px solid #e2e8f0' } },
+          React.createElement('p', { className: 'section-title', style: { marginBottom: 0 } }, 'Detalhamento da Perda')
+        ),
+        React.createElement('div', { style: { overflowX: 'auto' } },
+          React.createElement('table', null,
+            React.createElement('thead', null,
+              React.createElement('tr', { className: 'table-head-navy' },
+                React.createElement('th', null, 'Indicador'),
+                React.createElement('th', { className: 'center' }, 'Melhor Histórico'),
+                React.createElement('th', { className: 'center' }, 'Nota 2025'),
+                React.createElement('th', { className: 'center' }, 'Queda'),
+                React.createElement('th', { className: 'center' }, 'Status')
+              )
+            ),
+            React.createElement('tbody', null,
+              LOSS_RANKING.map(d => {
+                const sem = SEMAFORO.find(s => s.indicador === d.indicador);
+                const cfg = semaforoConfig[sem?.cor || 'green'];
+                return React.createElement('tr', { key: d.indicador },
+                  React.createElement('td', { style: { fontWeight: 600 } }, d.indicador),
+                  React.createElement('td', { className: 'center' }, React.createElement(GradeBadge, { grade: d.melhor, size: 'sm' })),
+                  React.createElement('td', { className: 'center' }, React.createElement(GradeBadge, { grade: d.atual, size: 'sm' })),
+                  React.createElement('td', { className: 'center' },
+                    d.perda > 0
+                      ? React.createElement('span', { style: { color: '#ef4444', fontWeight: 700 } }, '−' + d.perda + ' nível' + (d.perda > 1 ? 'is' : ''))
+                      : React.createElement('span', { style: { color: '#16a34a', fontWeight: 600 } }, 'Manteve')
+                  ),
+                  React.createElement('td', { className: 'center' },
+                    React.createElement('span', { style: { display: 'inline-flex', alignItems: 'center', gap: 4, padding: '2px 8px', borderRadius: 99, fontSize: 11, fontWeight: 600, background: cfg.bg, color: cfg.text } },
+                      cfg.icon, ' ', sem?.situacao
+                    )
+                  )
+                );
+              })
+            )
+          )
+        )
+      )
+    );
+  }
+
+  // ─── PAGE 5: PROJEÇÃO 2026 ─────────────────────────────────────────────────
+  function Projecao2026() {
+    const radarData = INDICATORS.map(ind => ({ ind, '2025': GRADE_VALUE[NOTAS_2025[ind]], 'Proj. 2026': GRADE_VALUE[PROJECAO_2026[ind]] }));
+    const barData = INDICATORS.map(ind => ({
+      ind, nota2025: GRADE_VALUE[NOTAS_2025[ind]], proj2026: GRADE_VALUE[PROJECAO_2026[ind]],
+      notaStr2025: NOTAS_2025[ind], notaStrProj: PROJECAO_2026[ind],
+      melhora: GRADE_VALUE[PROJECAO_2026[ind]] - GRADE_VALUE[NOTAS_2025[ind]],
+    }));
+    const notas2026 = Object.values(PROJECAO_2026);
+    const bplusOuA = notas2026.filter(n => n === 'A' || n === 'B+').length;
+    const projecaoIEGM = bplusOuA >= 4 ? 'B+' : 'B';
+
+    const RadarTip = ({ active, payload }) => {
+      if (!active || !payload?.length) return null;
+      return React.createElement('div', { style: { background: '#fff', border: '1px solid #e2e8f0', borderRadius: 10, padding: 12, fontSize: 11, minWidth: 160 } },
+        React.createElement('p', { style: { fontWeight: 700, marginBottom: 8 } }, payload[0]?.payload?.ind),
+        payload.map(p => React.createElement('div', { key: p.name, className: 'flex justify-between', style: { marginBottom: 4 } },
+          React.createElement('span', { style: { color: p.color } }, p.name + ':'),
+          React.createElement('span', { style: { fontWeight: 600 } }, tickMap[p.value])
+        ))
+      );
+    };
+    const BarTip = ({ active, payload, label }) => {
+      if (!active || !payload?.length) return null;
+      const d = barData.find(b => b.ind === label);
+      return React.createElement('div', { style: { background: '#fff', border: '1px solid #e2e8f0', borderRadius: 10, padding: 12, fontSize: 11, minWidth: 180 } },
+        React.createElement('p', { style: { fontWeight: 700, marginBottom: 8 } }, label),
+        React.createElement('div', { className: 'flex justify-between', style: { marginBottom: 4 } }, React.createElement('span', null, '2025:'), React.createElement(GradeBadge, { grade: d?.notaStr2025, size: 'sm' })),
+        React.createElement('div', { className: 'flex justify-between', style: { marginBottom: 4 } }, React.createElement('span', null, 'Proj. 2026:'), React.createElement(GradeBadge, { grade: d?.notaStrProj, size: 'sm' })),
+        d?.melhora > 0 && React.createElement('p', { style: { color: '#16a34a', fontWeight: 600, marginTop: 6 } }, '↑ Melhora de ' + d.melhora + ' nível(is)')
+      );
+    };
+
+    const topCards = [
+      { label: 'IEG-M 2025', grade: 'B', borderColor: '#003366' },
+      { label: 'Projeção 2026', grade: projecaoIEGM, borderColor: '#16a34a', labelColor: '#15803d' },
+    ];
+
+    return React.createElement('div', { className: 'space-y' },
+      React.createElement(PageHeader, { icon: '🔮', title: 'Projeção 2026', subtitle: 'Tendência baseada nos dados do painel — sem dados estimados além do informado', badge: 'Página 5 de 6' }),
+
+      React.createElement('div', { className: 'alert-box alert-blue' },
+        React.createElement('span', { className: 'alert-icon' }, 'ℹ️'),
+        React.createElement('div', null,
+          React.createElement('p', { className: 'alert-title' }, 'Sobre esta projeção'),
+          React.createElement('p', { className: 'alert-text' }, 'A projeção 2026 reflete a ', React.createElement('strong', null, 'tendência do plano de ação declarado'), ': melhora moderada onde há esforço planejado, manutenção onde o indicador já está estável. Não são dados oficiais.')
+        )
+      ),
+
+      React.createElement('div', { className: 'grid grid-4' },
+        React.createElement('div', { className: 'card card-navy-border card-p', style: { textAlign: 'center' } },
+          React.createElement('p', { style: { fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '.08em', color: '#003366', marginBottom: 8 } }, 'IEG-M 2025'),
+          React.createElement(GradeBadge, { grade: 'B', size: 'xl' })
+        ),
+        React.createElement('div', { className: 'card card-green-border card-p', style: { textAlign: 'center' } },
+          React.createElement('p', { style: { fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '.08em', color: '#15803d', marginBottom: 8 } }, 'Projeção 2026'),
+          React.createElement(GradeBadge, { grade: projecaoIEGM, size: 'xl' })
+        ),
+        React.createElement('div', { className: 'card card-amber-border card-p', style: { textAlign: 'center' } },
+          React.createElement('p', { style: { fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '.08em', color: '#b45309', marginBottom: 8 } }, 'Indicadores em B+ (2025)'),
+          React.createElement('p', { style: { fontSize: 28, fontWeight: 700, color: '#f59e0b' } }, '1')
+        ),
+        React.createElement('div', { className: 'card card-blue-border card-p', style: { textAlign: 'center' } },
+          React.createElement('p', { style: { fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '.08em', color: '#1d4ed8', marginBottom: 8 } }, 'Proj. em B+ ou A (2026)'),
+          React.createElement('p', { style: { fontSize: 28, fontWeight: 700, color: '#1d4ed8' } }, bplusOuA)
+        )
+      ),
+
+      React.createElement('div', { className: 'grid grid-2' },
+        React.createElement('div', { className: 'card card-p' },
+          React.createElement('p', { className: 'section-title' }, 'Radar: 2025 vs Projeção 2026'),
+          React.createElement('p', { className: 'section-sub' }, 'Escala: A=5, B+=4, B=3, C+=2, C=1'),
+          React.createElement(ResponsiveContainer, { width: '100%', height: 280 },
+            React.createElement(RadarChart, { data: radarData, margin: { top: 10, right: 30, bottom: 10, left: 30 } },
+              React.createElement(PolarGrid, { stroke: '#e5e7eb' }),
+              React.createElement(PolarAngleAxis, { dataKey: 'ind', tick: { fontSize: 11, fontWeight: 600 } }),
+              React.createElement(PolarRadiusAxis, { angle: 30, domain: [0, 5], tick: { fontSize: 9 }, tickFormatter: v => tickMap[v] || '', tickCount: 6 }),
+              React.createElement(Radar, { name: '2025', dataKey: '2025', stroke: '#ef4444', fill: '#ef4444', fillOpacity: 0.15, strokeWidth: 2 }),
+              React.createElement(Radar, { name: 'Proj. 2026', dataKey: 'Proj. 2026', stroke: '#1d4ed8', fill: '#1d4ed8', fillOpacity: 0.1, strokeWidth: 2, strokeDasharray: '5 3' }),
+              React.createElement(Tooltip, { content: React.createElement(RadarTip) }),
+              React.createElement(Legend, { wrapperStyle: { fontSize: 12 } })
+            )
+          )
+        ),
+        React.createElement('div', { className: 'card card-p' },
+          React.createElement('p', { className: 'section-title' }, 'Evolução Esperada por Indicador'),
+          React.createElement('p', { className: 'section-sub' }, '2025 vs Projeção 2026'),
+          React.createElement(ResponsiveContainer, { width: '100%', height: 280 },
+            React.createElement(BarChart, { data: barData, margin: { top: 4, right: 12, left: -10, bottom: 0 }, barCategoryGap: '30%' },
+              React.createElement(CartesianGrid, { strokeDasharray: '3 3', stroke: '#f1f5f9', vertical: false }),
+              React.createElement(XAxis, { dataKey: 'ind', tick: { fontSize: 10, fontWeight: 600 } }),
+              React.createElement(YAxis, { domain: [0, 5], tickFormatter: v => tickMap[v] || '', ticks: [1,2,3,4,5], tick: { fontSize: 10 } }),
+              React.createElement(Tooltip, { content: React.createElement(BarTip) }),
+              React.createElement(Legend, { wrapperStyle: { fontSize: 12 } }),
+              React.createElement(Bar, { dataKey: 'nota2025', name: '2025', fill: '#ef4444', radius: [4,4,0,0], opacity: 0.75 }),
+              React.createElement(Bar, { dataKey: 'proj2026', name: 'Proj. 2026', fill: '#1d4ed8', radius: [4,4,0,0], opacity: 0.8 })
+            )
+          )
+        )
+      ),
+
+      React.createElement('div', { className: 'card', style: { overflow: 'hidden' } },
+        React.createElement('div', { style: { padding: '16px 20px', borderBottom: '1px solid #e2e8f0' } },
+          React.createElement('p', { className: 'section-title', style: { marginBottom: 0 } }, 'Comparativo Detalhado')
+        ),
+        React.createElement('div', { style: { overflowX: 'auto' } },
+          React.createElement('table', null,
+            React.createElement('thead', null,
+              React.createElement('tr', { className: 'table-head-navy' },
+                React.createElement('th', null, 'Indicador'),
+                React.createElement('th', { className: 'center' }, '2025'),
+                React.createElement('th', { className: 'center' }, 'Projeção 2026'),
+                React.createElement('th', { className: 'center' }, 'Movimento')
+              )
+            ),
+            React.createElement('tbody', null,
+              barData.map(d => React.createElement('tr', { key: d.ind },
+                React.createElement('td', { style: { fontWeight: 600 } }, d.ind),
+                React.createElement('td', { className: 'center' }, React.createElement(GradeBadge, { grade: d.notaStr2025, size: 'sm' })),
+                React.createElement('td', { className: 'center' }, React.createElement(GradeBadge, { grade: d.notaStrProj, size: 'sm' })),
+                React.createElement('td', { className: 'center', style: { fontSize: 11, fontWeight: 700 } },
+                  d.melhora > 0
+                    ? React.createElement('span', { style: { color: '#16a34a' } }, '↑ +' + d.melhora)
+                    : React.createElement('span', { style: { color: '#64748b' } }, '→ Mantém')
+                )
+              ))
+            )
+          )
+        )
+      )
+    );
+  }
+
+  // ─── PAGE 6: PLANO DE RECUPERAÇÃO ─────────────────────────────────────────
+  function PlanoRecuperacao() {
+    const impactoConfig = {
+      'Muito Alto': { bg: '#fef2f2', text: '#991b1b', border: '#fecaca', dotColor: '#ef4444' },
+      'Alto':       { bg: '#fff7ed', text: '#9a3412', border: '#fed7aa', dotColor: '#f97316' },
+      'Médio':      { bg: '#fffbeb', text: '#92400e', border: '#fde68a', dotColor: '#f59e0b' },
+      'Baixo':      { bg: '#f0fdf4', text: '#166534', border: '#bbf7d0', dotColor: '#22c55e' },
+    };
+
+    const situacaoAtual = [
+      { label: 'A',      valor: 0, color: '#16a34a' },
+      { label: 'B+',     valor: 1, color: '#22c55e' },
+      { label: 'B',      valor: 4, color: '#f59e0b' },
+      { label: 'C+ / C', valor: 2, color: '#ef4444' },
+    ];
+
+    const metaBplus = [
+      { label: 'A ou B+', atual: 1, meta: 4 },
+      { label: 'B',       atual: 4, meta: 3 },
+      { label: 'C+ / C',  atual: 2, meta: 0 },
+    ];
+    const metaColors = { 'A ou B+': '#16a34a', 'B': '#f59e0b', 'C+ / C': '#ef4444' };
+
+    return React.createElement('div', { className: 'space-y' },
+      React.createElement(PageHeader, { icon: '🎯', title: 'Plano de Recuperação do B+', subtitle: 'O que cada secretaria precisa fazer para Olímpia retornar ao B+', badge: 'Página 6 de 6' }),
+
+      React.createElement('div', { className: 'obj-banner' },
+        React.createElement('p', { className: 'obj-banner-label' }, 'Objetivo Estratégico'),
+        React.createElement('p', { className: 'obj-banner-title' }, 'Retornar ao IEG-M B+'),
+        React.createElement('p', { className: 'obj-banner-sub' }, 'Meta: elevar pelo menos ', React.createElement('strong', null, '4 indicadores para B+ ou A'), ' e eliminar todos os indicadores C e C+.')
+      ),
+
+      React.createElement('div', { className: 'grid grid-2' },
+        // Situação atual
+        React.createElement('div', { className: 'card card-p' },
+          React.createElement('p', { className: 'section-title' }, 'Situação Atual — 2025'),
+          React.createElement('p', { className: 'section-sub' }, 'Distribuição das 7 notas dos indicadores'),
+          situacaoAtual.map(s => React.createElement('div', { key: s.label, className: 'flex items-center gap-3', style: { marginBottom: 12 } },
+            React.createElement('div', { style: { width: 64, fontSize: 13, fontWeight: 700, color: s.color } }, s.label),
+            React.createElement('div', { className: 'progress-bg' },
+              React.createElement('div', { className: 'progress-fill', style: { width: (s.valor / 7 * 100) + '%', background: s.color, minWidth: s.valor > 0 ? 28 : 0 } },
+                s.valor > 0 && React.createElement('span', null, s.valor)
+              )
+            ),
+            React.createElement('div', { style: { width: 32, textAlign: 'right', fontSize: 13, fontWeight: 600, color: '#64748b' } }, s.valor + '/7')
+          )),
+          React.createElement('div', { style: { marginTop: 8, padding: '10px 12px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8, fontSize: 11, color: '#b91c1c' } },
+            '⚠️ Apenas ', React.createElement('strong', null, '1 indicador em B+'), ' e ', React.createElement('strong', null, '2 em C ou C+'), ' — abaixo do mínimo para B+.'
+          )
+        ),
+
+        // Meta B+
+        React.createElement('div', { className: 'card card-p' },
+          React.createElement('p', { className: 'section-title' }, 'Meta para Alcançar B+'),
+          React.createElement('p', { className: 'section-sub' }, 'Configuração necessária dos 7 indicadores'),
+          metaBplus.map(m => {
+            const color = metaColors[m.label];
+            return React.createElement('div', { key: m.label, style: { marginBottom: 16 } },
+              React.createElement('div', { className: 'flex justify-between', style: { fontSize: 11, fontWeight: 600, marginBottom: 6 } },
+                React.createElement('span', null, m.label),
+                React.createElement('span', { style: { color: '#64748b' } }, 'Atual: ' + m.atual + ' → Meta: ' + m.meta)
+              ),
+              React.createElement('div', { className: 'flex gap-2' },
+                Array.from({ length: 7 }).map((_, i) => {
+                  const isAtual = i < m.atual;
+                  const isMeta = i < m.meta;
+                  return React.createElement('div', {
+                    key: i, className: 'meta-sq',
+                    style: {
+                      background: isMeta ? color : 'transparent',
+                      borderColor: isAtual ? color : (isMeta ? color + '66' : '#e5e7eb'),
+                      opacity: isMeta || isAtual ? 1 : 0.4,
+                    }
+                  });
+                })
+              )
+            );
+          }),
+          React.createElement('div', { style: { padding: '10px 12px', background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 8, fontSize: 11, color: '#15803d' } },
+            '✅ Meta: ', React.createElement('strong', null, '4+ indicadores em A ou B+'), ', 3 em B, ', React.createElement('strong', null, '0 em C+ ou C'), '.'
+          )
+        )
+      ),
+
+      // Priority Matrix
+      React.createElement('div', { className: 'card', style: { overflow: 'hidden' } },
+        React.createElement('div', { style: { padding: '16px 20px', borderBottom: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' } },
+          React.createElement('div', null,
+            React.createElement('p', { className: 'section-title', style: { marginBottom: 2 } }, 'Matriz de Prioridade'),
+            React.createElement('p', { style: { fontSize: 11, color: '#64748b' } }, 'Ordenada por impacto no IEG-M e urgência de recuperação')
+          ),
+          React.createElement('span', { style: { fontSize: 11, color: '#64748b' } }, '🔝 Prioridade 1 = Maior urgência')
+        ),
+        PRIORITY_MATRIX.map((row, i) => {
+          const cfg = impactoConfig[row.impacto];
+          const circleColor = row.prioridade <= 2 ? '#ef4444' : row.prioridade <= 4 ? '#f59e0b' : '#16a34a';
+          const gap = GRADE_VALUE[row.meta] - GRADE_VALUE[row.notaAtual];
+          return React.createElement('div', {
+            key: row.indicador,
+            style: { display: 'flex', alignItems: 'center', gap: 16, padding: '14px 20px', borderTop: '1px solid #e2e8f0', background: i % 2 === 0 ? '#fff' : '#f8fafc' }
+          },
+            React.createElement('div', { className: 'priority-circle', style: { background: circleColor } }, row.prioridade),
+            React.createElement('div', { style: { flex: 1 } },
+              React.createElement('p', { style: { fontWeight: 600, fontSize: 13 } }, row.indicador),
+              React.createElement('p', { style: { fontSize: 11, color: '#64748b', marginTop: 2 } }, 'Nota atual → Meta')
+            ),
+            React.createElement('span', { className: 'impact-badge', style: { background: cfg.bg, color: cfg.text, borderColor: cfg.border } }, row.impacto),
+            React.createElement('div', { className: 'flex items-center gap-2' },
+              React.createElement(GradeBadge, { grade: row.notaAtual, size: 'sm' }),
+              React.createElement('span', { style: { color: '#64748b', fontSize: 12 } }, '→'),
+              React.createElement(GradeBadge, { grade: row.meta, size: 'sm' })
+            ),
+            React.createElement('div', { style: { minWidth: 80, textAlign: 'right' } },
+              gap > 0
+                ? React.createElement('span', { style: { fontSize: 11, fontWeight: 700, color: '#ef4444' } }, '+' + gap + ' nível' + (gap > 1 ? 'is' : ''))
+                : React.createElement('span', { style: { fontSize: 11, fontWeight: 600, color: '#16a34a' } }, 'Já na meta')
+            )
+          );
+        })
+      ),
+
+      // CTA 3 columns
+      React.createElement('div', { className: 'grid grid-3' },
+        React.createElement('div', { style: { background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 12, padding: 16 } },
+          React.createElement('p', { style: { fontSize: 13, fontWeight: 700, color: '#991b1b', marginBottom: 6 } }, '🚨 Ação Imediata'),
+          React.createElement('p', { style: { fontSize: 11, color: '#b91c1c' } },
+            React.createElement('strong', null, 'i-Plan'), ' e ', React.createElement('strong', null, 'i-Amb'), ' são os maiores bloqueios. Sem melhora nestes dois, o B+ é inviável. Prioridade máxima para planejamento e meio ambiente.'
+          )
+        ),
+        React.createElement('div', { style: { background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 12, padding: 16 } },
+          React.createElement('p', { style: { fontSize: 13, fontWeight: 700, color: '#92400e', marginBottom: 6 } }, '⚙️ Ação de Médio Prazo'),
+          React.createElement('p', { style: { fontSize: 11, color: '#b45309' } },
+            React.createElement('strong', null, 'i-Saúde'), ', ', React.createElement('strong', null, 'i-Cidade'), ' e ', React.createElement('strong', null, 'i-Educ'), ' precisam sair do B/C+ para B+ através de ações setoriais específicas por secretaria.'
+          )
+        ),
+        React.createElement('div', { style: { background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 12, padding: 16 } },
+          React.createElement('p', { style: { fontSize: 13, fontWeight: 700, color: '#166534', marginBottom: 6 } }, '✅ Manutenção'),
+          React.createElement('p', { style: { fontSize: 11, color: '#15803d' } },
+            React.createElement('strong', null, 'i-Fiscal'), ' (já em B+) e ', React.createElement('strong', null, 'i-Gov TI'), ' (em B) devem ser mantidos estáveis enquanto os críticos são recuperados.'
+          )
+        )
+      )
+    );
+  }
+
+  // ─── NAVIGATION CONFIG ─────────────────────────────────────────────────────
+  const PAGES = [
+    { id: 'executiva',  icon: '📊', label: 'Visão Executiva',        sub: 'Panorama geral',            component: VisaoExecutiva },
+    { id: 'evolucao',   icon: '📈', label: 'Evolução',               sub: 'Histórico dos indicadores', component: EvolucaoIndicadores },
+    { id: 'fatores',    icon: '🏆', label: 'Fatores do B+',          sub: '2016–2018 vs hoje',         component: FatoresBplus },
+    { id: 'gargalos',   icon: '🚨', label: 'Gargalos Atuais',        sub: 'Pontos críticos',           component: GargalosAtuais },
+    { id: 'projecao',   icon: '🔮', label: 'Projeção 2026',          sub: 'Tendência futura',          component: Projecao2026 },
+    { id: 'plano',      icon: '🎯', label: 'Plano de Recuperação',   sub: 'Ações por secretaria',      component: PlanoRecuperacao },
+  ];
+
+  const PAGE_TITLES = {
+    executiva: 'Visão Executiva', evolucao: 'Evolução dos Indicadores',
+    fatores: 'Fatores do B+', gargalos: 'Gargalos Atuais',
+    projecao: 'Projeção 2026', plano: 'Plano de Recuperação',
+  };
+
+  // ─── APP SHELL ─────────────────────────────────────────────────────────────
+  function App() {
+    const [page, setPage] = useState('executiva');
+    const current = PAGES.find(p => p.id === page);
+    const PageComponent = current.component;
+
+    return React.createElement('div', { className: 'app' },
+      // Sidebar
+      React.createElement('nav', { className: 'sidebar' },
+        React.createElement('div', { className: 'sidebar-header' },
+          React.createElement('div', { className: 'sidebar-logo' },
+            React.createElement('div', { className: 'sidebar-logo-icon' }, '🏛️'),
+            React.createElement('div', null,
+              React.createElement('div', { className: 'sidebar-logo-text' }, 'IEG-M Dashboard'),
+              React.createElement('div', { className: 'sidebar-logo-sub' }, 'Prefeitura de Olímpia · SP')
+            )
+          )
+        ),
+        React.createElement('div', { className: 'sidebar-nav' },
+          PAGES.map(p => React.createElement('button', {
+            key: p.id, className: `nav-item ${page === p.id ? 'active' : ''}`,
+            onClick: () => setPage(p.id)
+          },
+            React.createElement('span', { className: 'nav-icon' }, p.icon),
+            React.createElement('div', null,
+              React.createElement('div', { className: 'nav-label' }, p.label),
+              React.createElement('div', { className: 'nav-sub' }, p.sub)
+            )
+          ))
+        ),
+        React.createElement('div', { className: 'sidebar-footer' },
+          React.createElement('div', null, '📋 Fonte: IEG-M TCE-SP'),
+          React.createElement('div', { style: { marginTop: 2 } }, '🗓️ Referência: 2025')
+        )
+      ),
+
+      // Main
+      React.createElement('div', { className: 'main' },
+        React.createElement('div', { className: 'top-bar' },
+          React.createElement('span', { className: 'top-bar-title' }, PAGE_TITLES[page]),
+          React.createElement('span', { className: 'top-bar-badge' }, 'Olímpia / SP')
+        ),
+        React.createElement('div', { className: 'content' },
+          React.createElement(PageComponent)
+        )
+      )
+    );
+  }
+
+  // ─── RENDER ────────────────────────────────────────────────────────────────
+  const root = ReactDOM.createRoot(document.getElementById('root'));
+  root.render(React.createElement(App));
+})();
+</script>
+</body>
+</html>
